@@ -1,18 +1,22 @@
-import requests
+try:
+    from urllib2 import urlopen, Request, HTTPError, URLError
+except ImportError:
+    from urllib.request import urlopen, Request, HTTPError, URLError
+
 import signal
 import threading
 from bs4 import BeautifulSoup
-import urllib
 import sys
 import time
 
 shutdown_event = None
+GAME_OVER = 'game over'
+
+def build_request(url, data=None, headers={}):
+    headers['User-Agent'] = 'Dynamsoft'
+    return Request(url, data=data, headers=headers)
 
 def ctrl_c(signum, frame):
-    """Catch Ctrl-C key sequence and set a shutdown_event for our threaded
-    operations
-    """
-
     global shutdown_event
     shutdown_event.set()
     raise SystemExit('\nCancelling...')
@@ -31,35 +35,31 @@ class Crawler(threading.Thread):
 
             if file != None:
                 pages = self.readSiteMap()
-                # pages = ['http://192.168.8.233/test.aspx'] # for test
+                #pages = ['http://192.168.8.233/test.aspx'] # for test
                 for page in pages:
-                    if shutdown_event.isSet():
-                        break;
-
                     links = self.readHref(page)
-                    ret = self.crawlLinks(links, file)
-
-                    if not ret:
+                    if links == GAME_OVER:
                         break;
 
+                    ret = self.crawlLinks(links, file)
+                    if ret == GAME_OVER:
+                        break;
         except IOError:
             print "IOError"
         finally:
             if file:
                 file.close()
 
-    def readHref(self, url):
+    def queryLinks(self, result):
         links = []
-        try:
-            r = urllib.urlopen(url)
-        except:
-            print 'Failed to read url'
-            return "Failed"
-
-        soup = BeautifulSoup(r.read())
-
+        content = ''.join(result)
+        soup = BeautifulSoup(content)
         elements = soup.select('a')
+
         for element in elements:
+            if shutdown_event.isSet():
+                return GAME_OVER
+
             try:
                 link = element.get('href')
                 if link.startswith('http'):
@@ -70,61 +70,72 @@ class Crawler(threading.Thread):
 
         return links
 
+    def readHref(self, url):
+        result = []
+        try:
+            request = build_request(url)
+            f = urlopen(request, timeout=3)
+            while 1 and not shutdown_event.isSet():
+                tmp = f.read(10240)
+                if len(tmp) == 0:
+                    break
+                else:
+                    result.append(tmp)
+
+            f.close()
+        except HTTPError, URLError:
+            print URLError.code
+
+        if shutdown_event.isSet():
+            return GAME_OVER
+
+        return self.queryLinks(result)
+
     def readSiteMap(self):
         pages = []
-        r = None
         try:
-            # r = urllib.urlopen("http://www.codepool.biz/sitemap.xml")
-            r = urllib.urlopen("http://kb.dynamsoft.com/sitemap.xml")
-        except:
-            print 'Failed to read sitemap'
-            return 'Failed'
+            # f = urlopen("http://www.codepool.biz/sitemap.xml")
+            request = build_request("http://kb.dynamsoft.com/sitemap.xml")
+            f = urlopen(request, timeout=3)
+            xml = f.read()
 
-        xml = r.read()
+            soup = BeautifulSoup(xml)
+            urlTags = soup.find_all("url")
 
-        soup = BeautifulSoup(xml)
-        urlTags = soup.find_all("url")
+            print "The number of url tags in sitemap: ", str(len(urlTags))
 
-        print "The number of url tags in sitemap: ", str(len(urlTags))
+            for sitemap in urlTags:
+                link = sitemap.findNext("loc").text
+                pages.append(link)
 
-        for sitemap in urlTags:
-            link = sitemap.findNext("loc").text
-            pages.append(link)
+            f.close()
+        except HTTPError, URLError:
+            print URLError.code
 
         return pages
 
     def crawlLinks(self, links, file=None):
         for link in links:
             if shutdown_event.isSet():
-                return None
+                return GAME_OVER
 
             status_code = 0
-            res = None
-
-            print 'link: ', link
 
             try:
-                res = urllib.urlopen(link)
-            except:
-                pass
+                request = build_request(link)
+                f = urlopen(request)
+                status_code = f.code
+                f.close()
+            except HTTPError, URLError:
+                status_code = URLError.code
 
-            if not res:
-                print 'cannot open ', link
-                continue
-
-            status_code = res.getcode()
-
-            print 'status_code: ', status_code
-            if (status_code == 200):
-                continue
-
-            if (status_code == 404):
+            if status_code == 404:
                 if file != None:
                     file.write(link + '\n')
 
-            print str(status_code), ': ', link
+            print str(status_code), ':', link
 
-        return "Done"
+        return GAME_OVER
 
 def crawlPages():
     global shutdown_event
@@ -134,15 +145,16 @@ def crawlPages():
 
     crawler = Crawler()
     crawler.start()
-    crawler.join()
+    while crawler.isAlive():
+        crawler.join(timeout=0.1)
 
-    print 'Game over'
+    print GAME_OVER
 
 def main():
     try:
         crawlPages()
     except KeyboardInterrupt:
-        print_('\nCancelling...')
+        print_('\nKeyboardInterrupt')
 
 if __name__ == '__main__':
     main()
