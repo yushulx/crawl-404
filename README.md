@@ -21,4 +21,6 @@ How to Run
 
 Blog
 ----
-Coming soon...
+[How to Check Broken Links with 404 Error in Python][1]
+
+[1]:http://www.codepool.biz/python-check-broken-links-404.html
