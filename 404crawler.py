@@ -18,7 +18,7 @@ class Crawler(threading.Thread):
         self.shutdown_event = shutdown_event
         self.link = link
         self.filter = filter
-        self.crawl_depth = 0
+        self.crawl_depth = 1
 
     def run(self):
         with open("404.txt", "a") as log404:
@@ -35,13 +35,12 @@ class Crawler(threading.Thread):
         if url in self.all_links:
             return
 
-        if self.max_depth != -1 and depth == self.max_depth:
+        if self.max_depth > 0 and depth == self.max_depth:
             return
 
         self.all_links[url] = True
         if depth > self.crawl_depth:
             self.crawl_depth = depth
-            print(f'Crawling depth: {self.crawl_depth}')
 
         try:
             response = requests.get(url, timeout=3)

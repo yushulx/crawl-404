@@ -16,7 +16,7 @@ pip install beautifulsoup4
     python 404crawler.py -l https://www.dynamsoft.com -d 2 -f www.dynamsoft.com
     ```
 
-    If the depth is `-1`, it will crawl all the pages on the website.
+    If the depth is `0`, it will crawl all the pages on the website.
 
 2. Press `ctrl+c` to stop the program.
 
