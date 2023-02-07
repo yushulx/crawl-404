@@ -8,11 +8,15 @@ pip install beautifulsoup4
 ```
 
 ## How to Run
-1. Run `404crawler.py` with the target page and the depth of crawling:
+1. Run `404crawler.py` with the target page, the depth of crawling and link filter:
+
+    For example, if you want to crawl the website `https://www.dynamsoft.com` with the depth of 2, you can run the following command:
 
     ```bash
-    python 404crawler.py -l <the-target-page> -d 2
+    python 404crawler.py -l https://www.dynamsoft.com -d 2 -f www.dynamsoft.com
     ```
+
+    If the depth is `-1`, it will crawl all the pages on the website.
 
 2. Press `ctrl+c` to stop the program.
 
