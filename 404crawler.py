@@ -25,7 +25,10 @@ class Crawler(threading.Thread):
             with open("200.txt", "a") as log200:
                 self.detect_404_pages(self.link, 0, log404, log200)
                 
-        print(f'404 analysis completed. Crawling depth: {self.crawl_depth}. Total links: {len(self.all_links)}')
+        print(f'404 analysis completed. Crawling depth: {self.crawl_depth}. Total unique links: {len(self.all_links)}')
+        print('\nLink duplicates: ')
+        for url in self.all_links:
+            print(f"{url} - {self.all_links[url]}")
             
     def detect_404_pages(self, url, depth=0, log404=None, log200=None):
             
@@ -33,15 +36,13 @@ class Crawler(threading.Thread):
             return 
         
         if url in self.all_links:
+            self.all_links[url] += 1
             return
 
         if depth > self.crawl_depth:
             self.crawl_depth = depth
-            
-        if self.max_depth > 0 and depth == self.max_depth:
-            return
         
-        self.all_links[url] = True
+        self.all_links[url] = 1
         
         try:
             response = requests.get(url, timeout=3)
@@ -56,6 +57,9 @@ class Crawler(threading.Thread):
                 if self.filter != '':
                     if self.filter not in url:
                         return
+                    
+                if self.max_depth > -1 and depth == self.max_depth:
+                    return
                     
                 try:
                     if response.headers["Content-Type"].startswith("text/html"):
@@ -92,7 +96,7 @@ def crawlPages(link, depth, filter):
 def main():
     parser = argparse.ArgumentParser(description='404 page detector')
     parser.add_argument('-l', '--link', help='The target web page to be analyzed')
-    parser.add_argument('-d', '--depth', default=2, type=int, help='The depth of the link analysis')
+    parser.add_argument('-d', '--depth', default=0, type=int, help='The depth of the link analysis')
     parser.add_argument('-f', '--filter', default='', type=str, help='The containing string of the link to be filtered')
     args = parser.parse_args()
     
