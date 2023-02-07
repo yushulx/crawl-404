@@ -30,7 +30,7 @@ class Crawler(threading.Thread):
         for url in self.all_links:
             print(f"{url} - {self.all_links[url]}")
             
-    def detect_404_pages(self, url, depth=0, log404=None, log200=None):
+    def detect_404_pages(self, url, depth=0, log404=None, log200=None, referrer=None):
             
         if self.shutdown_event.is_set():
             return 
@@ -49,10 +49,10 @@ class Crawler(threading.Thread):
 
             if response.status_code == 404:
                 print(f"404 Error: {url}")
-                log404.write(f"{url}\n")
+                log404.write(f"{url}, referrer: {referrer}\n")
             else:
                 print(f"200 OK: {url}")
-                log200.write(f"{url}\n")
+                log200.write(f"{url}, referrer: {referrer}\n")
                 
                 if self.filter != '':
                     if self.filter not in url:
@@ -68,14 +68,14 @@ class Crawler(threading.Thread):
                         for link in links:
                             href = link.get("href")
                             if href != None and href.startswith("http"):
-                                self.detect_404_pages(href, depth + 1, log404, log200)
+                                self.detect_404_pages(href, depth + 1, log404, log200, url)
                     elif response.headers["Content-Type"].startswith("text/xml"):
                         soup = BeautifulSoup(response.content, "xml")
                         urlTags = soup.find_all("url")
                         for tag in urlTags:
                             loc = tag.find("loc")
                             if loc != None:
-                                self.detect_404_pages(loc.text, depth + 1, log404, log200)
+                                self.detect_404_pages(loc.text, depth + 1, log404, log200, None)
                     
                 except Exception as e:
                     print(f"Error: {e}, {url}")
