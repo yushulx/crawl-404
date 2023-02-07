@@ -25,7 +25,7 @@ class Crawler(threading.Thread):
             with open("200.txt", "a") as log200:
                 self.detect_404_pages(self.link, 0, log404, log200)
                 
-        print(f'404 analysis completed. Crawling depth: {self.crawl_depth}')
+        print(f'404 analysis completed. Crawling depth: {self.crawl_depth}. Total links: {len(self.all_links)}')
             
     def detect_404_pages(self, url, depth=0, log404=None, log200=None):
             
@@ -38,10 +38,10 @@ class Crawler(threading.Thread):
         if depth > self.crawl_depth:
             self.crawl_depth = depth
             
-        self.all_links[url] = True
-
         if self.max_depth > 0 and depth == self.max_depth:
             return
+        
+        self.all_links[url] = True
         
         try:
             response = requests.get(url, timeout=3)
@@ -64,7 +64,7 @@ class Crawler(threading.Thread):
                         for link in links:
                             href = link.get("href")
                             if href != None and href.startswith("http"):
-                                    self.detect_404_pages(href, depth + 1, log404, log200)
+                                self.detect_404_pages(href, depth + 1, log404, log200)
                     elif response.headers["Content-Type"].startswith("text/xml"):
                         soup = BeautifulSoup(response.content, "xml")
                         urlTags = soup.find_all("url")

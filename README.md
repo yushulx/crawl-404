@@ -13,7 +13,7 @@ pip install beautifulsoup4
     For example, if you want to crawl the website `https://www.dynamsoft.com` with the depth of 2, you can run the following command:
 
     ```bash
-    python 404crawler.py -l https://www.dynamsoft.com -d 2 -f www.dynamsoft.com
+    python 404crawler.py -l https://www.dynamsoft.com -d 2 -f dynamsoft.com
     ```
 
     If the depth is `0`, it will crawl all the pages on the website.
