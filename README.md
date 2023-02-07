@@ -1,5 +1,5 @@
 # Crawling Broken Links with 404 Error in Python
-The sample demonstrates how to use Python to crawl website pages via sitemap.xml and check broken links for every page.
+The sample demonstrates how to crawl website to find out 404 pages in Python.
 
 ## Installation
 
@@ -8,7 +8,7 @@ pip install beautifulsoup4
 ```
 
 ## How to Run
-1. Specify the target page and the depth of crawling in ``404crawler.py``:
+1. Run `404crawler.py` with the target page and the depth of crawling:
 
     ```bash
     python 404crawler.py -l <the-target-page> -d 2
